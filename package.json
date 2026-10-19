@@ -1,6 +1,6 @@
 {
   "name": "@ryaninvents/polymodel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Merge multiple LLMs into one OpenAI-compatible model (e.g. an Opus planner delegating to Haiku workers).",
   "type": "module",
   "license": "MIT",
@@ -19,12 +19,12 @@
     "ai-sdk"
   ],
   "engines": {
-    "node": ">=24.19.0"
+    "node": ">=24 <25"
   },
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "24.19.0",
+      "version": "24.x",
       "onFail": "error"
     }
   },

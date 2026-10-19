@@ -17,7 +17,7 @@ polymodel setup                         # pick providers, log in, choose models
 polymodel                               # serves http://127.0.0.1:4100/v1
 ```
 
-Requires Node.js ≥ 24.19.
+Requires Node.js 24.
 
 ## Setup
 
