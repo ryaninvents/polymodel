@@ -3,13 +3,14 @@ export {
   defineConfig,
   definePolymodel,
   forwardStream,
-  plannerExecutor,
+  workerBee,
   toPolymodelFinishReason,
   toPolymodelUsage,
   type ForwardedToolCall,
   type ForwardOptions,
   type ForwardResult,
-  type PlannerExecutorOptions,
+  type WorkerBeeOptions,
+  type WorkerLimits,
 } from "#domain";
 export type {
   Polymodel,

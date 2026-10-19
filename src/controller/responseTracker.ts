@@ -40,6 +40,7 @@ export function createResponseTracker() {
     inputTokens: 0,
     outputTokens: 0,
     cachedInputTokens: 0,
+    cacheWriteTokens: 0,
     reasoningTokens: 0,
   };
   let toolCallCount = 0;
@@ -53,6 +54,7 @@ export function createResponseTracker() {
         usage.inputTokens += event.usage.inputTokens;
         usage.outputTokens += event.usage.outputTokens;
         usage.cachedInputTokens += event.usage.cachedInputTokens;
+        usage.cacheWriteTokens += event.usage.cacheWriteTokens;
         usage.reasoningTokens += event.usage.reasoningTokens;
       }
     },

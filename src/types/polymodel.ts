@@ -1,5 +1,6 @@
 import type {
   LanguageModel,
+  LanguageModelCallOptions,
   ModelMessage,
   SystemModelMessage,
   ToolChoice,
@@ -16,6 +17,8 @@ export type PolymodelCallSettings = {
   seed?: number;
   presencePenalty?: number;
   frequencyPenalty?: number;
+  /** Reasoning effort; `"none"` disables reasoning where the provider allows it. */
+  reasoning?: LanguageModelCallOptions["reasoning"];
 };
 
 export type PolymodelRequest = {
@@ -41,6 +44,7 @@ export type StateStore = {
 };
 
 export type PolymodelLogger = {
+  trace(obj: object, msg?: string): void;
   debug(obj: object, msg?: string): void;
   info(obj: object, msg?: string): void;
   warn(obj: object, msg?: string): void;

@@ -8,6 +8,13 @@ export const SecretSchema = z.union([
     .describe("Read the value from this environment variable"),
 ]);
 
+export const PromptCachingSchema = z
+  .union([z.literal(false), z.object({ ttl: z.enum(["5m", "1h"]) })])
+  .optional()
+  .describe(
+    "Anthropic prompt caching. On with a 5 minute TTL by default; false turns it off",
+  );
+
 export const ProviderConfigSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("openai-compatible"),
@@ -19,11 +26,18 @@ export const ProviderConfigSchema = z.discriminatedUnion("type", [
     type: z.literal("anthropic"),
     baseURL: z.url().optional(),
     apiKey: SecretSchema.optional(),
+    promptCaching: PromptCachingSchema,
   }),
   z.object({
     type: z.literal("openai"),
     baseURL: z.url().optional(),
     apiKey: SecretSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("openrouter"),
+    baseURL: z.url().optional(),
+    apiKey: SecretSchema.optional(),
+    promptCaching: PromptCachingSchema,
   }),
 ]);
 
@@ -65,6 +79,7 @@ export const PolymodelConfigSchema = z.object({
 
 export type Secret = z.infer<typeof SecretSchema>;
 export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
+export type ProviderType = ProviderConfig["type"];
 /** What users write in their config file. */
 export type PolymodelConfigInput = z.input<typeof PolymodelConfigSchema>;
 /** The config after defaults are applied. */

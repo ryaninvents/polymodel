@@ -1,27 +1,43 @@
-import { plannerExecutor } from "#domain";
-import type { Env } from "#infra";
+import { workerBee } from "#domain";
+import { PROVIDER_CATALOG, type Env } from "#infra";
 import type { PolymodelConfigInput } from "#types";
 
-/** Used when no config file exists: one Opus→Haiku polymodel routed through LiteLLM. */
+// openai-compatible needs a base URL, which only a config file provides.
+const CANDIDATES = [
+  PROVIDER_CATALOG.anthropic,
+  PROVIDER_CATALOG.openrouter,
+  PROVIDER_CATALOG.openai,
+] as const;
+
+export class NoProviderError extends Error {
+  readonly code = "NO_PROVIDER" as const;
+  constructor() {
+    const variables = CANDIDATES.map(({ apiKeyEnv }) => apiKeyEnv);
+    super(
+      `No config file and no provider credentials found (looked for ${variables.join(", ")}). Run \`polymodel setup\`.`,
+    );
+    this.name = "NoProviderError";
+  }
+}
+
+/**
+ * Used when no config file exists: one worker-bee polymodel on the first
+ * provider whose API key is available.
+ */
 export function createDefaultConfig(env: Env): PolymodelConfigInput {
-  const {
-    LITELLM_BASE_URL,
-    LITELLM_API_KEY,
-    POLYMODEL_PLANNER_MODEL,
-    POLYMODEL_EXECUTOR_MODEL,
-  } = env.values;
+  const kind = CANDIDATES.find(({ apiKeyEnv }) => env.lookup(apiKeyEnv));
+  if (!kind) throw new NoProviderError();
+
+  const { POLYMODEL_PLANNER_MODEL, POLYMODEL_WORKER_MODEL } = env.values;
+  const name = kind.defaultName;
   return {
     providers: {
-      litellm: {
-        type: "openai-compatible",
-        baseURL: LITELLM_BASE_URL,
-        ...(LITELLM_API_KEY && { apiKey: { env: "LITELLM_API_KEY" } }),
-      },
+      [name]: { type: kind.type, apiKey: { env: kind.apiKeyEnv } },
     },
     models: {
-      "opus-haiku": plannerExecutor({
-        planner: `litellm:${POLYMODEL_PLANNER_MODEL}`,
-        executor: `litellm:${POLYMODEL_EXECUTOR_MODEL}`,
+      "worker-bee": workerBee({
+        planner: `${name}:${POLYMODEL_PLANNER_MODEL ?? kind.suggestedModels.planner}`,
+        worker: `${name}:${POLYMODEL_WORKER_MODEL ?? kind.suggestedModels.worker}`,
       }),
     },
   };

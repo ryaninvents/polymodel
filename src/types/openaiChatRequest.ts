@@ -109,6 +109,9 @@ export const OpenAIChatRequestSchema = z.looseObject({
   seed: z.number().int().nullish(),
   presence_penalty: z.number().nullish(),
   frequency_penalty: z.number().nullish(),
+  reasoning_effort: z
+    .enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"])
+    .nullish(),
 });
 
 export type OpenAIChatMessage = z.infer<typeof OpenAIChatMessageSchema>;

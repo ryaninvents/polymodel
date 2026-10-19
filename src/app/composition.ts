@@ -4,11 +4,11 @@ import { registerRoutes } from "#controller";
 import { createMemoryStore } from "#data";
 import { createPolymodelService } from "#domain";
 import {
-  createEnv,
   createLogger,
   createModelResolver,
   findConfigFile,
   loadConfigFile,
+  loadEnv,
   parseConfig,
   registerPackageAlias,
   type Env,
@@ -63,7 +63,7 @@ export type LoadedConfig = {
 export async function loadPolymodelConfig(
   configPath?: string,
 ): Promise<LoadedConfig> {
-  const env = createEnv(process.env);
+  const env = loadEnv(process.env);
   const logger = createLogger(env.values.POLYMODEL_LOG_LEVEL);
   registerPackageAlias();
   const path = findConfigFile(env, configPath);

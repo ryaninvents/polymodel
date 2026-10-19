@@ -13,6 +13,13 @@ class Polymodel < Formula
     bin.install_symlink libexec.glob("bin/*")
   end
 
+  def caveats
+    <<~EOS
+      Run `polymodel setup` to choose providers and store API keys before
+      starting the service.
+    EOS
+  end
+
   service do
     run [opt_bin/"polymodel", "serve"]
     keep_alive true

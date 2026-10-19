@@ -1,7 +1,7 @@
 import { fastify } from "fastify";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
-import { createPolymodelService, plannerExecutor } from "#domain";
+import { createPolymodelService, workerBee } from "#domain";
 import {
   createMapStateStore,
   createMockModel,
@@ -16,7 +16,7 @@ function createTestApp(models: Models, apiKey?: string) {
   const app = fastify();
   const service = createPolymodelService({
     models: {
-      "opus-haiku": plannerExecutor({ planner: "p:big", executor: "p:small" }),
+      "opus-haiku": workerBee({ planner: "p:big", worker: "p:small" }),
     },
     resolveModel: (reference) => {
       const model = models[reference];
@@ -24,7 +24,7 @@ function createTestApp(models: Models, apiKey?: string) {
       return model;
     },
     createStateStore: () => createMapStateStore(),
-    logger: { debug() {}, info() {}, warn() {}, error() {} },
+    logger: { trace() {}, debug() {}, info() {}, warn() {}, error() {} },
   });
   registerRoutes(app, { service, apiKey, now: () => 1_700_000_000_000 });
   return app;
@@ -50,10 +50,10 @@ function parseSse(payload: string): Array<unknown> {
 }
 
 describe("POST /v1/chat/completions", () => {
-  it("streams planner reasoning and executor text as one message", async () => {
+  it("streams the planner's answer as one message", async () => {
     const app = createTestApp({
-      "p:big": createMockModel([textResponse("plan")]),
-      "p:small": createMockModel([textResponse("Hello!")]),
+      "p:big": createMockModel([textResponse("Hello!")]),
+      "p:small": createMockModel([]),
     });
 
     const response = await app.inject({
@@ -79,13 +79,12 @@ describe("POST /v1/chat/completions", () => {
     expect(chunks.every((chunk) => chunk.model === "opus-haiku")).toBe(true);
     expect(chunks.map((chunk) => chunk.choices[0]?.delta)).toEqual([
       { role: "assistant", content: "" },
-      { reasoning_content: "plan" },
       { content: "Hello!" },
       {},
       undefined,
     ]);
     expect(chunks.at(-2)?.choices[0]?.finish_reason).toBe("stop");
-    expect(chunks.at(-1)?.usage?.total_tokens).toBe(30);
+    expect(chunks.at(-1)?.usage?.total_tokens).toBe(15);
   });
 
   it("returns planner tool calls in a non-streaming response", async () => {

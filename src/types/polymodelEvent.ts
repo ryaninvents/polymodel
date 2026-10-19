@@ -5,6 +5,8 @@ export type PolymodelUsage = {
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens: number;
+  /** Tokens written to the prompt cache; billed above the base input price. */
+  cacheWriteTokens: number;
   reasoningTokens: number;
 };
 

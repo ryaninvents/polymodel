@@ -184,6 +184,7 @@ function toSettings(request: OpenAIChatRequest): PolymodelCallSettings {
     seed: request.seed ?? undefined,
     presencePenalty: request.presence_penalty ?? undefined,
     frequencyPenalty: request.frequency_penalty ?? undefined,
+    reasoning: request.reasoning_effort ?? undefined,
   });
 }
 

@@ -73,6 +73,8 @@ export function createPolymodelService({
         state,
         abortSignal,
         logger: {
+          trace: (obj: object, msg?: string) =>
+            logger.trace({ model: request.model, ...obj }, msg),
           debug: (obj: object, msg?: string) =>
             logger.debug({ model: request.model, ...obj }, msg),
           info: (obj: object, msg?: string) =>

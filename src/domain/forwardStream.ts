@@ -36,6 +36,7 @@ export function toPolymodelUsage(usage: LanguageModelUsage): PolymodelUsage {
     inputTokens: usage.inputTokens ?? 0,
     outputTokens: usage.outputTokens ?? 0,
     cachedInputTokens: usage.inputTokenDetails.cacheReadTokens ?? 0,
+    cacheWriteTokens: usage.inputTokenDetails.cacheWriteTokens ?? 0,
     reasoningTokens: usage.outputTokenDetails.reasoningTokens ?? 0,
   };
 }

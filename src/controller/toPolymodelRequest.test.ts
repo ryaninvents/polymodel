@@ -39,6 +39,7 @@ describe("toPolymodelRequest", () => {
         ],
         max_tokens: 100,
         stop: "END",
+        reasoning_effort: "low",
       }),
     );
 
@@ -73,6 +74,7 @@ describe("toPolymodelRequest", () => {
     expect(request.settings).toEqual({
       maxOutputTokens: 100,
       stopSequences: ["END"],
+      reasoning: "low",
     });
   });
 

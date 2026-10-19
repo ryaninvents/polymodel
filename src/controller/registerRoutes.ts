@@ -7,6 +7,7 @@ import type {
   FastifyRequest,
 } from "fastify";
 import { z } from "zod";
+import { describeErrorChain } from "#util";
 import {
   createInvalidPolymodelRequestError,
   type PolymodelService,
@@ -17,6 +18,7 @@ import {
 } from "#types";
 import { collectCompletion } from "./collectCompletion.ts";
 import { encodeChunks, type ResponseMeta } from "./encodeChunks.ts";
+import { hashPromptPrefix } from "./hashPromptPrefix.ts";
 import { toHttpError } from "./toHttpError.ts";
 import { toPolymodelRequest } from "./toPolymodelRequest.ts";
 
@@ -49,12 +51,23 @@ async function* toServerSentEvents(
   chunks: AsyncIterable<OpenAIChatCompletionChunk>,
   log: FastifyBaseLogger,
 ): AsyncGenerator<string> {
+  const startedAt = Date.now();
+  let chunkCount = 0;
   try {
-    for await (const chunk of chunks)
+    for await (const chunk of chunks) {
+      chunkCount += 1;
       yield `data: ${JSON.stringify(chunk)}\n\n`;
+    }
     yield "data: [DONE]\n\n";
+    log.debug(
+      { chunks: chunkCount, streamMs: Date.now() - startedAt },
+      "response stream finished",
+    );
   } catch (error) {
-    log.error({ err: error }, "stream failed after headers were sent");
+    log.error(
+      { err: error, causes: describeErrorChain(error) },
+      "stream failed after headers were sent",
+    );
     yield `data: ${JSON.stringify(toHttpError(error).body)}\n\n`;
   }
 }
@@ -80,7 +93,11 @@ export function registerRoutes(
         .send(toHttpError(createInvalidPolymodelRequestError(message)).body);
     }
     const http = toHttpError(error);
-    if (http.status >= 500) request.log.error({ err: error }, "request failed");
+    if (http.status >= 500)
+      request.log.error(
+        { err: error, causes: describeErrorChain(error) },
+        "request failed",
+      );
     return reply.status(http.status).send(http.body);
   });
 
@@ -107,9 +124,27 @@ export function registerRoutes(
     if (!parsed.success)
       throw createInvalidPolymodelRequestError(z.prettifyError(parsed.error));
 
+    const { data } = parsed;
+    request.log.debug(
+      {
+        ...(await hashPromptPrefix(data)),
+        model: data.model,
+        stream: data.stream ?? false,
+        messages: data.messages.length,
+        roles: data.messages.map((message) => message.role),
+        tools: data.tools?.length ?? 0,
+        toolChoice: data.tool_choice,
+        maxTokens: data.max_tokens,
+      },
+      "chat completion request",
+    );
+    request.log.trace({ body: request.body }, "chat completion request body");
+
     const abort = new AbortController();
     reply.raw.on("close", () => {
-      if (!reply.raw.writableFinished) abort.abort();
+      if (reply.raw.writableFinished) return;
+      request.log.debug("client disconnected before the response finished");
+      abort.abort();
     });
 
     const meta: ResponseMeta = {

@@ -16,7 +16,11 @@ export type CallSummary = {
   conversation: Array<string>;
   tools: Array<string>;
   toolChoice: string | undefined;
-  settings: { temperature?: number; maxOutputTokens?: number };
+  settings: {
+    temperature?: number;
+    maxOutputTokens?: number;
+    reasoning?: CallOptions["reasoning"];
+  };
 };
 
 function describePart(
@@ -67,6 +71,7 @@ export function summarizeCall(
       ...(call.maxOutputTokens !== undefined && {
         maxOutputTokens: call.maxOutputTokens,
       }),
+      ...(call.reasoning !== undefined && { reasoning: call.reasoning }),
     },
   };
 }

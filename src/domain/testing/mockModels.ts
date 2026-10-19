@@ -50,6 +50,27 @@ export function toolCallResponse(
   };
 }
 
+/** Several tool calls in one reply, as a model emits when it works in parallel. */
+export function toolCallsResponse(
+  calls: Array<{ toolCallId: string; toolName: string; input: object }>,
+): LanguageModelV4StreamResult {
+  return {
+    stream: convertArrayToReadableStream([
+      { type: "stream-start", warnings: [] },
+      ...calls.map(
+        ({ toolCallId, toolName, input }) =>
+          ({
+            type: "tool-call",
+            toolCallId,
+            toolName,
+            input: JSON.stringify(input),
+          }) satisfies LanguageModelV4StreamPart,
+      ),
+      finishPart("tool-calls"),
+    ] satisfies Array<LanguageModelV4StreamPart>),
+  };
+}
+
 export function createMockModel(responses: Array<LanguageModelV4StreamResult>) {
   return new MockLanguageModelV4({ doStream: responses });
 }
@@ -66,7 +87,13 @@ export function createMapStateStore(): StateStore & {
   };
 }
 
-const silentLogger = { debug() {}, info() {}, warn() {}, error() {} };
+const silentLogger = {
+  trace() {},
+  debug() {},
+  info() {},
+  warn() {},
+  error() {},
+};
 
 export function createTestContext(
   models: Record<string, MockLanguageModelV4>,
@@ -106,4 +133,34 @@ export async function collectEvents(
   const collected: Array<PolymodelEvent> = [];
   for await (const event of events) collected.push(event);
   return collected;
+}
+
+/**
+ * A model that streams reasoning until it is aborted, never producing text or
+ * a tool call: the stall a small model falls into when it drafts instead of acting.
+ */
+export function createEndlessReasoningModel() {
+  return new MockLanguageModelV4({
+    doStream: async ({ abortSignal }) => ({
+      stream: new ReadableStream<LanguageModelV4StreamPart>({
+        start(controller) {
+          controller.enqueue({ type: "stream-start", warnings: [] });
+          controller.enqueue({ type: "reasoning-start", id: "r1" });
+          const timer = setInterval(
+            () =>
+              controller.enqueue({
+                type: "reasoning-delta",
+                id: "r1",
+                delta: "hmm ",
+              }),
+            5,
+          );
+          abortSignal?.addEventListener("abort", () => {
+            clearInterval(timer);
+            controller.error(new DOMException("aborted", "AbortError"));
+          });
+        },
+      }),
+    }),
+  });
 }

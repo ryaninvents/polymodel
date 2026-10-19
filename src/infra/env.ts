@@ -8,10 +8,8 @@ const PolymodelEnvSchema = z.object({
   POLYMODEL_LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "silent"])
     .default("info"),
-  POLYMODEL_PLANNER_MODEL: z.string().min(1).default("claude-opus-5-5"),
-  POLYMODEL_EXECUTOR_MODEL: z.string().min(1).default("claude-haiku-5-5"),
-  LITELLM_BASE_URL: z.url().default("http://127.0.0.1:4000/v1"),
-  LITELLM_API_KEY: z.string().min(1).optional(),
+  POLYMODEL_PLANNER_MODEL: z.string().min(1).optional(),
+  POLYMODEL_WORKER_MODEL: z.string().min(1).optional(),
   XDG_CONFIG_HOME: z.string().min(1).optional(),
   HOME: z.string().min(1).optional(),
 });
@@ -46,6 +44,10 @@ export function createEnv(
   }
   return {
     values: parsed.data,
+    /** Reads a variable that isn't part of the schema, such as a provider API key. */
+    lookup(variable: string): string | undefined {
+      return source[variable] || undefined;
+    },
     resolveSecret(secret: Secret): string {
       if (typeof secret === "string") return secret;
       const value = source[secret.env];
