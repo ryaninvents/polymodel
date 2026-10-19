@@ -1,0 +1,108 @@
+{
+  "name": "@ryaninvents/polymodel",
+  "version": "0.1.0",
+  "description": "Merge multiple LLMs into one OpenAI-compatible model (e.g. an Opus planner + Haiku executor) behind LiteLLM.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ryan Kennedy <ryan@rmkennedy.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryaninvents/polymodel.git"
+  },
+  "keywords": [
+    "llm",
+    "litellm",
+    "openai",
+    "anthropic",
+    "proxy",
+    "ai-sdk"
+  ],
+  "engines": {
+    "node": ">=24.19.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.19.0",
+      "onFail": "error"
+    }
+  },
+  "packageManager": "pnpm@9.15.4",
+  "bin": {
+    "polymodel": "./dist/app/cli.js"
+  },
+  "exports": {
+    ".": {
+      "polymodel-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./plugin": {
+      "polymodel-source": "./src/plugin.ts",
+      "types": "./dist/plugin.d.ts",
+      "default": "./dist/plugin.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "imports": {
+    "#types": {
+      "polymodel-source": "./src/types/index.ts",
+      "default": "./dist/types/index.js"
+    },
+    "#util": {
+      "polymodel-source": "./src/util/index.ts",
+      "default": "./dist/util/index.js"
+    },
+    "#infra": {
+      "polymodel-source": "./src/infra/index.ts",
+      "default": "./dist/infra/index.js"
+    },
+    "#data": {
+      "polymodel-source": "./src/data/index.ts",
+      "default": "./dist/data/index.js"
+    },
+    "#domain": {
+      "polymodel-source": "./src/domain/index.ts",
+      "default": "./dist/domain/index.js"
+    },
+    "#controller": {
+      "polymodel-source": "./src/controller/index.ts",
+      "default": "./dist/controller/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "dev": "node --conditions=polymodel-source --watch src/app/cli.ts serve",
+    "start": "node dist/app/cli.js serve",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write . && eslint --fix .",
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "prepublishOnly": "pnpm check && pnpm build"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.82",
+    "@ai-sdk/openai": "^4.0.96",
+    "@ai-sdk/openai-compatible": "^3.0.71",
+    "ai": "^7.0.143",
+    "fastify": "^5.12.7",
+    "pino": "^10.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@ai-sdk/provider": "4.0.29",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
+  }
+}
