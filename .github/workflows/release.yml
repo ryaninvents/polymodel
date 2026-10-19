@@ -1,0 +1,69 @@
+name: release
+
+# Triggered manually once pending changesets have been merged to main.
+# Runs `changeset version` to consume changesets, derives the tag from
+# package.json, commits & pushes the bump, then publishes to npm and cuts the
+# GitHub release (scripts/release.sh).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # npm provenance / trusted publishing.
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history so changesets can read the log.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply changesets and bump version
+        run: pnpm changeset version
+
+      - name: Read version
+        id: version
+        run: echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version bump
+        run: |
+          git config user.name "polymodel release bot"
+          git config user.email "noreply@github.com"
+          git add -A package.json pnpm-lock.yaml .changeset
+          [ -f CHANGELOG.md ] && git add CHANGELOG.md
+          # No pending changesets (e.g. the first release) means nothing to bump.
+          if git diff --cached --quiet; then
+            echo "no version bump to commit"
+          else
+            git commit -m "chore: release ${{ steps.version.outputs.tag }}"
+            git push https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git HEAD:main
+          fi
+
+      - name: Publish and cut release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # npm automation token. Leave unset once trusted publishing is
+          # configured for this repo on npmjs.com.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # PAT/App token that can dispatch workflows on the tap repo
+          # (actions: write scope; classic PAT: "workflow").
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: bash scripts/release.sh "${{ steps.version.outputs.tag }}"

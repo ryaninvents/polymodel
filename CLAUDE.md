@@ -32,3 +32,7 @@ Public entry points: `src/plugin.ts` (`@ryaninvents/polymodel/plugin`, for confi
 - Node is pinned to `.nvmrc` (24.19.0) via `engines`, `devEngines`, and `use-node-version` in `.npmrc`.
 - Tests are co-located (`*.test.ts`); mock models and context helpers are in `src/domain/testing/`.
 - Run `pnpm check` before finishing work; `pnpm format` applies Prettier and ESLint fixes.
+
+## Releases
+
+Changesets + manual `release` workflow → `scripts/release.sh` (npm publish, GitHub release with rendered Homebrew formula, tap trigger). Add a changeset (`pnpm changeset`) for user-facing changes. The formula template is `scripts/formula/polymodel.rb.ejs`. Details are in `docs/releasing.md`.

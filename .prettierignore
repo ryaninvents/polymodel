@@ -1,3 +1,5 @@
 dist
 pnpm-lock.yaml
-packaging/homebrew/*.rb
+scripts/formula
+release-assets
+CHANGELOG.md

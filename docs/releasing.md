@@ -1,31 +1,40 @@
 # Releasing
 
-## npm
+Releases use [Changesets](https://github.com/changesets/changesets) and a manually triggered workflow, the same setup as `ryaninvents/compare-branch`.
+
+## Day to day
+
+Add a changeset with each user-facing change and merge it to `main`:
 
 ```sh
-pnpm version <patch|minor|major>
-pnpm publish --access public   # prepublishOnly runs check + build
-git push --follow-tags
+pnpm changeset
 ```
 
-## Homebrew
+## Cutting a release
 
-The formula lives in a separate tap repo, `ryaninvents/homebrew-tap`, at `Formula/polymodel.rb`. `packaging/homebrew/polymodel.rb` is the template.
+Run the **release** workflow from the Actions tab (`gh workflow run release.yml`). It:
 
-After publishing to npm:
+1. Runs `pnpm changeset version`, which consumes pending changesets, bumps `package.json`, and updates `CHANGELOG.md`.
+2. Commits and pushes the bump to `main` (skipped when there are no changesets, e.g. the first `v0.1.0` release).
+3. Runs `scripts/release.sh v<version>`, which:
+   - runs `pnpm check` and `pnpm build`;
+   - packs the npm tarball and publishes that exact file to npm (with provenance in CI);
+   - renders `scripts/formula/polymodel.rb.ejs` against the registry tarball URL and its sha256;
+   - creates the GitHub release `v<version>` with the tarball, `SHA256SUMS`, and `polymodel.rb`;
+   - triggers `ryaninvents/homebrew-tap`'s `update-formula` workflow (`project=polymodel`), which copies `polymodel.rb` from the release into the tap.
 
-```sh
-VERSION=$(node -p "require('./package.json').version")
-URL="https://registry.npmjs.org/@ryaninvents/polymodel/-/polymodel-${VERSION}.tgz"
-curl -sL "$URL" | shasum -a 256
-```
+`scripts/release.sh` also runs locally (`scripts/release.sh v0.1.0`) with a logged-in `npm` and `gh`. `POLYMODEL_SKIP_NPM=1` skips publishing to npm; `POLYMODEL_SKIP_TAP=1` skips the tap trigger.
 
-Update `url` and `sha256` in the tap's formula, then check it:
+## One-time setup
 
-```sh
-brew install --build-from-source ryaninvents/tap/polymodel
-brew test polymodel
-brew audit --strict ryaninvents/tap/polymodel
-```
+- **`NPM_TOKEN` secret**: an npm automation token for the first publish. After that, you can configure [trusted publishing](https://docs.npmjs.com/trusted-publishers) for `ryaninvents/polymodel` / `release.yml` on npmjs.com and delete the secret.
+- **`HOMEBREW_TAP_TOKEN` secret**: a PAT that can dispatch workflows on `ryaninvents/homebrew-tap` (fine-grained: `actions: write`; classic: `workflow`). It can be the same token compare-branch uses.
+- **Tap registration**: in `ryaninvents/homebrew-tap`, add `polymodel` to `projects.json`:
 
-Users install with `brew install ryaninvents/tap/polymodel` and can run it in the background with `brew services start polymodel`.
+  ```json
+  "polymodel": { "repo": "ryaninvents/polymodel", "formula": "polymodel.rb", "asset": "polymodel.rb" }
+  ```
+
+  and add `polymodel` to the `project` input's `options` in `.github/workflows/update-formula.yml`.
+
+Users then install with `brew install ryaninvents/tap/polymodel`, and can run it in the background with `brew services start polymodel`.
