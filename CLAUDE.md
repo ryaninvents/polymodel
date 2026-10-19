@@ -31,6 +31,7 @@ Public entry points: `src/plugin.ts` (`@ryaninvents/polymodel/plugin`, for confi
 - TypeScript is pinned to 6.x because typescript-eslint doesn't support 7 yet. `erasableSyntaxOnly` is on (no parameter properties or enums) so Node can run `src/` directly.
 - Node is pinned to `.nvmrc` (24.19.0) via `engines`, `devEngines`, and `use-node-version` in `.npmrc`.
 - Tests are co-located (`*.test.ts`); mock models and context helpers are in `src/domain/testing/`.
+- Planner/executor routing tests double as its spec: `conversation.test.ts` (turn identity, plan splicing), `plannerExecutor.routing.test.ts` (what each model receives), `plannerExecutor.state.test.ts` (state → route, results → state), `plannerExecutor.walkthrough.test.ts` (one turn across several requests). Assert on `summarizeCall()` output so expectations stay readable, and keep these files in sync when routing changes.
 - Run `pnpm check` before finishing work; `pnpm format` applies Prettier and ESLint fixes.
 
 ## Releases
