@@ -5,7 +5,7 @@
 # workflow. Requires pnpm, npm (logged in, or NODE_AUTH_TOKEN / trusted
 # publishing in CI), and an authenticated gh CLI (GH_TOKEN in CI).
 #
-# POLYMODEL_SKIP_NPM=1   skip `npm publish` (e.g. re-cutting a GitHub release)
+# POLYMODEL_SKIP_NPM=1   skip `npm publish`; the formula then installs from the GitHub release tarball
 # POLYMODEL_SKIP_TAP=1   skip triggering the Homebrew tap update
 set -euo pipefail
 
@@ -28,8 +28,15 @@ if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
 fi
 
 # The npm tarball is published as-is, so its sha256 is exactly what Homebrew
-# downloads from the registry URL below.
-tarball_url() { echo "https://registry.npmjs.org/${PACKAGE}/-/${PACKAGE#*/}-${VERSION}.tgz"; }
+# downloads from the registry URL below. Without an npm publish the registry
+# URL would 404, so the formula builds from the GitHub release asset instead.
+tarball_url() {
+  if [ "${POLYMODEL_SKIP_NPM:-0}" = "1" ]; then
+    echo "https://github.com/${REPO}/releases/download/${TAG}/$(basename "$TARBALL")"
+  else
+    echo "https://registry.npmjs.org/${PACKAGE}/-/${PACKAGE#*/}-${VERSION}.tgz"
+  fi
+}
 
 # Ask the tap repo's own workflow to fetch this release's polymodel.rb asset
 # and commit it. The default GITHUB_TOKEN can't dispatch workflows in another
